@@ -1,4 +1,3 @@
-import Image from "next/image";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { deleteArticle, updateArticleStatus } from "@/lib/actions";
@@ -40,8 +39,12 @@ export default async function AdminActualitesPage() {
                 <td className="py-3">
                   <div className="h-12 w-16 overflow-hidden rounded bg-offwhite">
                     {a.coverImageUrl && (
-                      <Image src={a.coverImageUrl} alt="" width={64} height={48} className="h-full w-full object-cover" />
-                    )}
+  <img
+    src={a.coverImageUrl}
+    alt=""
+    className="h-full w-full object-cover"
+  />
+)}
                   </div>
                 </td>
                 <td className="py-3 font-semibold">
