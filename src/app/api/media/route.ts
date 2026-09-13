@@ -77,8 +77,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const blobStoreId = process.env.GOUDOUSSY_BLOB_STORE_ID;
-
+const blobStoreId = process.env.BLOB_STORE_ID;
     if (!blobStoreId) {
       return NextResponse.json(
         { error: "Configuration du stockage manquante." },
