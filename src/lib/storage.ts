@@ -32,8 +32,7 @@ export async function saveFile(
 const blob = await put(filename, buffer, {
   access: "public",
   addRandomSuffix: false,
-  storeId: process.env.GOUDOUSSY_BLOB_STORE_ID,
-  oidcToken: process.env.VERCEL_OIDC_TOKEN,
+  storeId: process.env.BLOB_STORE_ID,
 });
 
   return {

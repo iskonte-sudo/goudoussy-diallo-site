@@ -90,20 +90,10 @@ export async function POST(req: NextRequest) {
 
     const storeId =
       process.env.BLOB_STORE_ID ||
-      process.env.GOUDOUSSY_BLOB_STORE_ID;
-
-    const oidcToken = process.env.VERCEL_OIDC_TOKEN;
-
-    if (!storeId) {
+      process.env.BLOB_STORE_ID;
+if (!storeId) {
       return NextResponse.json(
         { error: "BLOB_STORE_ID est manquant." },
-        { status: 500 }
-      );
-    }
-
-    if (!oidcToken) {
-      return NextResponse.json(
-        { error: "VERCEL_OIDC_TOKEN est manquant." },
         { status: 500 }
       );
     }
@@ -123,7 +113,6 @@ export async function POST(req: NextRequest) {
       allowedContentTypes: [mimeType],
       maximumSizeInBytes: maximumSize,
       storeId,
-      oidcToken,
     });
 
     const presigned = await presignUrl(

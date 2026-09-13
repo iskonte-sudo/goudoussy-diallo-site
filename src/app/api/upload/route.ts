@@ -68,22 +68,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const storeId = process.env.GOUDOUSSY_BLOB_STORE_ID;
-    const oidcToken = process.env.VERCEL_OIDC_TOKEN;
+    const storeId = process.env.BLOB_STORE_ID;
 
-    if (!storeId) {
-      return NextResponse.json(
-        { error: "GOUDOUSSY_BLOB_STORE_ID est manquant" },
-        { status: 500 }
-      );
-    }
-
-    if (!oidcToken) {
-      return NextResponse.json(
-        { error: "VERCEL_OIDC_TOKEN est manquant" },
-        { status: 500 }
-      );
-    }
 
     const safeName = filename
       .replace(/[^a-zA-Z0-9._-]/g, "-")
@@ -101,7 +87,6 @@ export async function POST(request: NextRequest) {
       allowedContentTypes: [mimeType],
       maximumSizeInBytes: maximumSize,
       storeId,
-      oidcToken,
     });
 
   const presigned = await presignUrl(signedToken, {
