@@ -1,0 +1,378 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+// Développement local : SQLite. Le schéma reste volontairement compatible
+// PostgreSQL (pas d'enum natif, pas de types spécifiques à SQLite) afin de
+// pouvoir basculer `provider = "postgresql"` en production sans réécrire les
+// modèles — voir README pour la procédure de migration.
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// SQLite ne supporte pas les enums Prisma : tous les statuts sont des String
+// avec une valeur par défaut. Valeurs utilisées pour Article / FieldAction :
+// "BROUILLON" | "A_VALIDER" | "PUBLIE" | "ARCHIVE"
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String
+  password  String
+  role      String   @default("admin")
+  createdAt DateTime @default(now())
+}
+
+model Category {
+  id       String    @id @default(cuid())
+  name     String    @unique
+  slug     String    @unique
+  articles Article[]
+  projects Project[]
+}
+
+model Article {
+  id              String        @id @default(cuid())
+  title           String
+  slug            String        @unique
+  excerpt         String
+  content         String
+  coverImageUrl   String?
+  coverImageAlt   String?
+  author          String        @default("Goudoussy Diallo")
+  status          String        @default("BROUILLON")
+  featured        Boolean       @default(false)
+  isDemoContent   Boolean       @default(false)
+  categoryId      String?
+  category        Category?     @relation(fields: [categoryId], references: [id])
+  seoTitle        String?
+  seoDescription  String?
+  seoKeywords     String?
+  ogImageUrl      String?
+  publishedAt     DateTime?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  galleryImages   GalleryImage[]
+  media           ArticleMedia[]
+
+  @@index([status])
+  @@index([categoryId])
+}
+
+model Project {
+  id            String        @id @default(cuid())
+  title         String
+  slug          String        @unique
+  description   String
+  objective     String?
+  results       String?
+  location      String?
+  date          DateTime?
+  status        String        @default("EN_PREPARATION") // EN_PREPARATION | EN_COURS | REALISE | TERMINE
+  coverImageUrl String?
+  videoUrl      String?
+  externalLink  String?
+  isDemoContent Boolean       @default(false)
+  categoryId    String?
+  category      Category?     @relation(fields: [categoryId], references: [id])
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  galleryImages GalleryImage[]
+  media         ProjectMedia[]
+
+  @@index([status])
+}
+
+model Responsibility {
+  id          String   @id @default(cuid())
+  order       Int      @default(0)
+  domain      String   // e.g. "SPORT", "INSTITUTIONS", "AFRIQUE"
+  title       String
+  organism    String?
+  description String
+  imageUrl    String?
+  startDate   String?
+  endDate     String?
+  active      Boolean  @default(true)
+  sourceNote  String?  // note interne, jamais affichée publiquement
+  confidence  String   @default("A_CONFIRMER") // ELEVEE | A_CONFIRMER
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model TimelineItem {
+  id          String   @id @default(cuid())
+  order       Int      @default(0)
+  date        String   // free text: "28 février 2026" or "À préciser"
+  title       String
+  description String
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+}
+
+model FieldAction {
+  id            String   @id @default(cuid())
+  title         String
+  description   String
+  location      String
+  date          DateTime?
+  imageUrl      String?
+  videoUrl      String?
+  status        String   @default("BROUILLON")
+  order         Int      @default(0)
+  isDemoContent Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  media         FieldActionMedia[]
+
+  @@index([status])
+}
+
+model SportEvent {
+  id          String   @id @default(cuid())
+  title       String
+  description String
+  imageUrl    String?
+  date        DateTime?
+  type        String?
+  location    String?
+  status      String   @default("BROUILLON")
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  media       SportEventMedia[]
+}
+
+model Gallery {
+  id          String         @id @default(cuid())
+  title       String
+  slug        String         @unique
+  description String?
+  category    String
+  coverImageUrl String?
+  visible     Boolean        @default(true)
+  order       Int            @default(0)
+  images      GalleryImage[]
+  createdAt   DateTime       @default(now())
+}
+
+model GalleryImage {
+  id        String   @id @default(cuid())
+  url       String
+  caption   String?
+  altText   String?
+  order     Int      @default(0)
+  galleryId String?
+  gallery   Gallery? @relation(fields: [galleryId], references: [id])
+  articleId String?
+  article   Article? @relation(fields: [articleId], references: [id])
+  projectId String?
+  project   Project? @relation(fields: [projectId], references: [id])
+  createdAt DateTime @default(now())
+}
+
+model Video {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  provider    String   // YOUTUBE | FACEBOOK | HOSTED
+  url         String
+  thumbnailUrl String?
+  category    String?
+  order       Int      @default(0)
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+}
+
+model ContactMessage {
+  id        String   @id @default(cuid())
+  name      String
+  email     String
+  phone     String?
+  subject   String?
+  message   String
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model SocialLink {
+  id       String  @id @default(cuid())
+  platform String  @unique // facebook | instagram | youtube | linkedin | tiktok
+  url      String
+  order    Int     @default(0)
+  visible  Boolean @default(true)
+}
+
+model Biography {
+  id             String   @id @default("singleton")
+  presentation   String   @default("")
+  parcours       String   @default("")
+  formation      String   @default("")
+  experiences    String   @default("")
+  engagements    String   @default("")
+  vision         String   @default("")
+  valeurs        String   @default("")
+  citation       String?
+  portraitUrl    String?
+  secondaryImageUrl String?
+  // Note interne, jamais affichée publiquement — cf. section "sécurité éditoriale"
+  internalNameNote String @default("Nom complet à confirmer : Mamadou / Abdoul Goudoussy Diallo")
+  updatedAt      DateTime @updatedAt
+}
+
+model SiteSetting {
+  id                    String  @id @default("singleton")
+  heroTagline           String  @default("Engagement, proximité et action au service de la Guinée")
+  siteName              String  @default("Goudoussy Diallo")
+  displayName           String  @default("Goudoussy Diallo")
+  slogan                String?
+  logoUrl               String?
+  faviconUrl            String?
+  contactEmail          String?
+  contactPhone          String?
+  contactWhatsapp       String?
+  address                String?
+  seoDefaultTitle       String?
+  seoDefaultDescription String?
+  ogImageUrl            String?
+  homepageArticlesCount Int     @default(4)
+  homepageProjectsCount Int     @default(3)
+  homepageGalleryCount  Int     @default(6)
+  footerDescription     String?
+  footerCopyright       String?
+  footerLegalNotice     String?
+  footerPrivacyPolicyUrl String?
+}
+
+// --- Médiathèque ----------------------------------------------------------
+
+model Media {
+  id         String   @id @default(cuid())
+  url        String   // ex: /uploads/2026/09/photo.jpg — pour un média externe, URL d'intégration/aperçu
+  filename   String
+  mimeType   String
+  size       Int      // octets (0 pour un média externe)
+  width      Int?
+  height     Int?
+  altText    String?
+  caption    String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  // --- Ajouts pour la gestion multimédia (images + vidéos) ---------------
+  type         String  @default("IMAGE")  // IMAGE | VIDEO_LOCAL | VIDEO_EXTERNAL
+  provider     String  @default("LOCAL")  // LOCAL | YOUTUBE | VIMEO | FACEBOOK
+  externalUrl  String? // URL d'origine collée par l'administrateur (YouTube/Vimeo/Facebook)
+  externalId   String? // identifiant extrait (ex: ID YouTube/Vimeo) si applicable
+  thumbnailUrl String? // miniature récupérée si disponible (YouTube, ou upload manuel pour Facebook)
+
+  articleLinks   ArticleMedia[]
+  projectLinks   ProjectMedia[]
+  sportEventLinks SportEventMedia[]
+  fieldActionLinks FieldActionMedia[]
+
+  @@index([createdAt])
+  @@index([type])
+}
+
+// --- Tables de liaison média ↔ contenu -------------------------------
+// Un même Media peut être utilisé par plusieurs contenus ; chaque ligne
+// porte son propre ordre et sa propre légende (indépendants de ceux du
+// Media d'origine, pour permettre une légende contextuelle par usage).
+
+model ArticleMedia {
+  id        String   @id @default(cuid())
+  articleId String
+  article   Article  @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  mediaId   String
+  media     Media    @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+  order     Int      @default(0)
+  caption   String?
+  createdAt DateTime @default(now())
+
+  @@index([articleId])
+}
+
+model ProjectMedia {
+  id        String   @id @default(cuid())
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  mediaId   String
+  media     Media    @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+  order     Int      @default(0)
+  caption   String?
+  createdAt DateTime @default(now())
+
+  @@index([projectId])
+}
+
+model SportEventMedia {
+  id          String     @id @default(cuid())
+  sportEventId String
+  sportEvent  SportEvent @relation(fields: [sportEventId], references: [id], onDelete: Cascade)
+  mediaId     String
+  media       Media      @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+  order       Int        @default(0)
+  caption     String?
+  createdAt   DateTime   @default(now())
+
+  @@index([sportEventId])
+}
+
+model FieldActionMedia {
+  id            String      @id @default(cuid())
+  fieldActionId String
+  fieldAction   FieldAction @relation(fields: [fieldActionId], references: [id], onDelete: Cascade)
+  mediaId       String
+  media         Media       @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+  order         Int         @default(0)
+  caption       String?
+  createdAt     DateTime    @default(now())
+
+  @@index([fieldActionId])
+}
+
+// --- Slider / Hero de l'accueil --------------------------------------------
+
+model HeroSlide {
+  id                    String   @id @default(cuid())
+  order                 Int      @default(0)
+  active                Boolean  @default(true)
+  label                 String?  // sur-titre, ex: "BIENVENUE SUR LE SITE OFFICIEL"
+  title                 String
+  subtitle              String?
+  description           String?
+  imageDesktopUrl       String?
+  imageMobileUrl        String?
+  primaryButtonText     String?
+  primaryButtonLink     String?
+  secondaryButtonText   String?
+  secondaryButtonLink   String?
+  quote                 String?
+  durationMs            Int      @default(7000)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  @@index([active, order])
+}
+
+// --- Menu principal ---------------------------------------------------
+
+model MenuItem {
+  id       String  @id @default(cuid())
+  label    String
+  url      String
+  order    Int     @default(0)
+  active   Boolean @default(true)
+  newTab   Boolean @default(false)
+}
+
+// --- Sections de la page d'accueil (activer / réordonner / titrer) --------
+
+model HomepageSection {
+  id       String  @id @default(cuid())
+  key      String  @unique // hero | intro | responsabilites | domaines | actualites | projets | terrain | stats | galerie | reseaux | contact | cta
+  order    Int     @default(0)
+  enabled  Boolean @default(true)
+  title    String?
+  subtitle String?
+}
