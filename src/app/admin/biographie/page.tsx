@@ -81,14 +81,30 @@ export default async function AdminBiographiePage() {
               action={updateResponsibility.bind(null, r.id)}
               className="rounded-lg border border-line p-5"
             >
-              <div className="mb-3 text-xs font-bold uppercase text-ink-soft">{r.domain}</div>
-              <Field label="Titre">
-                <input name="title" defaultValue={r.title} className="input" />
-              </Field>
-              <div className="h-3" />
-              <Field label="Description">
-                <textarea name="description" defaultValue={r.description} rows={2} className="input" />
-              </Field>
+ <Field label="Titre">
+  <input name="title" defaultValue={r.title} className="input" />
+</Field>
+
+<div className="h-4" />
+
+<MediaPicker
+  name="imageUrl"
+  label="Photo de fond"
+  defaultValue={r.imageUrl}
+  triggerLabel="Choisir la photo de fond"
+/>
+
+<div className="h-3" />
+
+<Field label="Description">
+  <textarea
+    name="description"
+    defaultValue={r.description}
+    rows={2}
+    className="input"
+  />
+</Field>
+
               <div className="h-3" />
               <Field label="Niveau de confiance (interne)">
                 <select name="confidence" defaultValue={r.confidence} className="input">

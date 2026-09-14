@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
+
 async function requireAdmin() {
   const session = await getServerSession(authOptions);
   if (!session) redirect("/admin/login");
@@ -223,10 +224,11 @@ export async function updateResponsibility(id: string, formData: FormData) {
   await prisma.responsibility.update({
     where: { id },
     data: {
-      title: String(formData.get("title") ?? ""),
-      description: String(formData.get("description") ?? ""),
-      confidence: String(formData.get("confidence") ?? "A_CONFIRMER")
-    }
+  title: String(formData.get("title") ?? ""),
+  description: String(formData.get("description") ?? ""),
+  imageUrl: String(formData.get("imageUrl") ?? "") || null,
+  confidence: String(formData.get("confidence") ?? "A_CONFIRMER")
+}
   });
 
   revalidatePath("/admin/biographie");
