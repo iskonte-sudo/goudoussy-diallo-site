@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getToken } from "next-auth/jwt";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 import { issueSignedToken, presignUrl } from "@vercel/blob";
 
 export const runtime = "nodejs";
@@ -7,13 +8,13 @@ export const runtime = "nodejs";
 const ALLOWED_IMAGE_TYPES = [
   "image/jpeg",
   "image/png",
-  "image/webp",
+  "image/webp"
 ];
 
 const ALLOWED_VIDEO_TYPES = [
   "video/mp4",
   "video/webm",
-  "video/quicktime",
+  "video/quicktime"
 ];
 
 const MAX_IMAGE_SIZE = 8 * 1024 * 1024;
@@ -31,12 +32,9 @@ function sanitizeFilename(filename: string) {
 
 export async function POST(req: NextRequest) {
   try {
-    const sessionToken = await getToken({
-      req,
-      secret: process.env.NEXTAUTH_SECRET,
-    });
+    const session = await getServerSession(authOptions);
 
-    if (!sessionToken) {
+    if (!session) {
       return NextResponse.json(
         { error: "Non authentifié." },
         { status: 401 }
@@ -82,16 +80,15 @@ export async function POST(req: NextRequest) {
         {
           error: `Fichier trop volumineux (maximum ${
             isVideo ? "100" : "8"
-          } Mo).`,
+          } Mo).`
         },
         { status: 413 }
       );
     }
 
-    const storeId =
-      process.env.BLOB_STORE_ID ||
-      process.env.BLOB_STORE_ID;
-if (!storeId) {
+    const storeId = process.env.BLOB_STORE_ID;
+
+    if (!storeId) {
       return NextResponse.json(
         { error: "BLOB_STORE_ID est manquant." },
         { status: 500 }
@@ -103,8 +100,7 @@ if (!storeId) {
     const pathname =
       `media/${Date.now()}-${crypto.randomUUID()}-${safeFilename}`;
 
-    const validUntil =
-      Date.now() + 15 * 60 * 1000;
+    const validUntil = Date.now() + 15 * 60 * 1000;
 
     const signedToken = await issueSignedToken({
       pathname,
@@ -112,7 +108,7 @@ if (!storeId) {
       validUntil,
       allowedContentTypes: [mimeType],
       maximumSizeInBytes: maximumSize,
-      storeId,
+      storeId
     });
 
     const presigned = await presignUrl(
@@ -125,28 +121,23 @@ if (!storeId) {
         allowedContentTypes: [mimeType],
         maximumSizeInBytes: maximumSize,
         allowOverwrite: false,
-        addRandomSuffix: false,
+        addRandomSuffix: false
       }
     );
-const publicHost = storeId
-  .replace(/^store_/i, "")
-  .toLowerCase();
 
-const publicUrl = `https://${publicHost}.public.blob.vercel-storage.com/${pathname}`;
+    const publicHost = storeId
+      .replace(/^store_/i, "")
+      .toLowerCase();
 
-    console.log("Upload token généré:", {
-      pathname,
-      storeId,
-      mimeType,
-      maximumSize,
-    });
+    const publicUrl =
+      `https://${publicHost}.public.blob.vercel-storage.com/${pathname}`;
 
     return NextResponse.json({
       presignedUrl: presigned.presignedUrl,
       publicUrl,
       pathname,
       mimeType,
-      maximumSize,
+      maximumSize
     });
   } catch (error) {
     console.error(
@@ -159,7 +150,7 @@ const publicUrl = `https://${publicHost}.public.blob.vercel-storage.com/${pathna
         error:
           error instanceof Error
             ? error.message
-            : "Impossible de préparer l'upload.",
+            : "Impossible de préparer l'upload."
       },
       { status: 500 }
     );

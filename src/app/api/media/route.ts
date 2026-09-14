@@ -1,18 +1,29 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getToken } from "next-auth/jwt";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
+export const runtime = "nodejs";
+
 export async function GET(req: NextRequest) {
-  const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
-  if (!token) {
-    return NextResponse.json({ error: "Non authentifié." }, { status: 401 });
+  const session = await getServerSession(authOptions);
+
+  if (!session) {
+    return NextResponse.json(
+      { error: "Non authentifié." },
+      { status: 401 }
+    );
   }
 
   const search = req.nextUrl.searchParams.get("q")?.trim();
-  const kind = req.nextUrl.searchParams.get("kind"); // "image" | "video" | null (tous)
+  const kind = req.nextUrl.searchParams.get("kind");
 
   const typeFilter =
-    kind === "image" ? { type: "IMAGE" } : kind === "video" ? { type: { in: ["VIDEO_LOCAL", "VIDEO_EXTERNAL"] } } : {};
+    kind === "image"
+      ? { type: "IMAGE" }
+      : kind === "video"
+      ? { type: { in: ["VIDEO_LOCAL", "VIDEO_EXTERNAL"] } }
+      : {};
 
   const media = await prisma.media.findMany({
     where: {
@@ -44,18 +55,19 @@ export async function GET(req: NextRequest) {
   const withUsage = media.map((m) => ({
     ...m,
     usageCount:
-      m._count.articleLinks + m._count.projectLinks + m._count.sportEventLinks + m._count.fieldActionLinks
+      m._count.articleLinks +
+      m._count.projectLinks +
+      m._count.sportEventLinks +
+      m._count.fieldActionLinks
   }));
 
   return NextResponse.json({ media: withUsage });
 }
-export async function POST(req: NextRequest) {
-  const token = await getToken({
-    req,
-    secret: process.env.NEXTAUTH_SECRET,
-  });
 
-  if (!token) {
+export async function POST(req: NextRequest) {
+  const session = await getServerSession(authOptions);
+
+  if (!session) {
     return NextResponse.json(
       { error: "Non authentifié." },
       { status: 401 }
@@ -70,14 +82,20 @@ export async function POST(req: NextRequest) {
     const mimeType = String(body.mimeType ?? "").trim();
     const size = Number(body.size ?? 0);
 
-    if (!url || !filename || !mimeType || !Number.isFinite(size)) {
+    if (
+      !url ||
+      !filename ||
+      !mimeType ||
+      !Number.isFinite(size)
+    ) {
       return NextResponse.json(
         { error: "Informations du média incomplètes." },
         { status: 400 }
       );
     }
 
-const blobStoreId = process.env.BLOB_STORE_ID;
+    const blobStoreId = process.env.BLOB_STORE_ID;
+
     if (!blobStoreId) {
       return NextResponse.json(
         { error: "Configuration du stockage manquante." },
@@ -88,13 +106,13 @@ const blobStoreId = process.env.BLOB_STORE_ID;
     const allowedImageTypes = [
       "image/jpeg",
       "image/png",
-      "image/webp",
+      "image/webp"
     ];
 
     const allowedVideoTypes = [
       "video/mp4",
       "video/webm",
-      "video/quicktime",
+      "video/quicktime"
     ];
 
     const isImage = allowedImageTypes.includes(mimeType);
@@ -116,7 +134,7 @@ const blobStoreId = process.env.BLOB_STORE_ID;
         {
           error: `Fichier trop volumineux (maximum ${
             isVideo ? "100" : "8"
-          } Mo).`,
+          } Mo).`
         },
         { status: 413 }
       );
@@ -129,8 +147,8 @@ const blobStoreId = process.env.BLOB_STORE_ID;
         mimeType,
         size,
         type: isVideo ? "VIDEO_LOCAL" : "IMAGE",
-        provider: "LOCAL",
-      },
+        provider: "LOCAL"
+      }
     });
 
     return NextResponse.json({ media });
