@@ -16,8 +16,10 @@ export default async function HomePage() {
       prisma.responsibility.findMany({ where: { active: true }, orderBy: { order: "asc" } }),
       prisma.article.findMany({
         where: { status: "PUBLIE" },
-        orderBy: { publishedAt: "desc" },
-        take: 4,
+orderBy: [
+  { publishedAt: "desc" },
+  { createdAt: "desc" },
+],        take: 4,
         include: { category: true }
       }),
       prisma.project.findMany({ orderBy: { createdAt: "desc" }, take: 3 }),
